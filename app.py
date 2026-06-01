@@ -22,9 +22,6 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 load_dotenv()
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SESSION STATE  — FIX 8: mutable defaults via factory, not shared references
-# ══════════════════════════════════════════════════════════════════════════════
 def _init_state():
     defaults = {
         "messages":      [],        # [{role, content, confidence, sources}]
@@ -46,9 +43,7 @@ def _init_state():
 
 _init_state()
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  CSS  (unchanged premium design)
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap');
@@ -315,9 +310,7 @@ html, body, [data-testid="stApp"],
 """, unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  MODELS
-# ══════════════════════════════════════════════════════════════════════════════
+
 @st.cache_resource(show_spinner=False)
 def load_models():
     emb = MistralAIEmbeddings(model="mistral-embed")
@@ -325,9 +318,6 @@ def load_models():
     return emb, llm
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  VECTORSTORE  — FIX 4: temp file always cleaned up via finally
-# ══════════════════════════════════════════════════════════════════════════════
 def build_vectorstore(pdf_bytes: bytes) -> "Chroma":
     emb, _ = load_models()
     tmp_path = None
@@ -362,9 +352,6 @@ def build_vectorstore(pdf_bytes: bytes) -> "Chroma":
             os.unlink(tmp_path)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  RETRIEVAL  — FIX 5: clamp scores to [0,1] before threshold comparison
-# ══════════════════════════════════════════════════════════════════════════════
 def retrieve_context(query: str, vs, top_k: int, min_score: float):
     raw = vs.similarity_search_with_relevance_scores(query=query, k=top_k)
     if not raw:
@@ -378,9 +365,7 @@ def retrieve_context(query: str, vs, top_k: int, min_score: float):
     return filtered
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  PROMPT
-# ══════════════════════════════════════════════════════════════════════════════
+
 _SYSTEM = (
     "You are DocMind, a helpful AI assistant that answers questions strictly "
     "from the provided document context.\n"
@@ -415,9 +400,6 @@ def _trim_and_format_history(history: list) -> str:
     return "\n".join(lines) if lines else "None"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  RAG PIPELINE
-# ══════════════════════════════════════════════════════════════════════════════
 def rag_query(query: str, vs, history: list, top_k: int, min_score: float) -> dict:
     """Full pipeline. Never raises — all errors returned as answer strings."""
     try:
@@ -443,12 +425,7 @@ def rag_query(query: str, vs, history: list, top_k: int, min_score: float) -> di
         return {"answer": f"⚠ Error: {exc}", "sources": [], "confidence": 0.0}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  PROCESS PENDING QUERY
-#  FIX 2: dedup via submit_count integer, not text comparison
-#  FIX 3: try/finally guarantees is_processing resets even on unexpected raises
-#  FIX 6: trim history BEFORE passing to rag_query
-# ══════════════════════════════════════════════════════════════════════════════
+
 def process_pending():
     # Only process if a new submission exists that hasn't been processed yet
     if st.session_state.submit_count <= st.session_state.processed_count:
@@ -494,9 +471,6 @@ def process_pending():
         st.session_state.processed_count = st.session_state.submit_count
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  RENDER: TOP NAV
-# ══════════════════════════════════════════════════════════════════════════════
 def render_top_nav():
     pill = ""
     if st.session_state.doc_name:
@@ -512,10 +486,6 @@ def render_top_nav():
     </div>""", unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  RENDER: UPLOAD PANEL
-#  FIX 7: can_index logic — only block if BOTH name matches AND vs exists
-# ══════════════════════════════════════════════════════════════════════════════
 def render_upload_panel():
     label = "📄  Upload Document"
     if st.session_state.doc_name:
@@ -601,9 +571,6 @@ def render_upload_panel():
                 )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  RENDER: CHAT
-# ══════════════════════════════════════════════════════════════════════════════
 def render_chat():
     msgs_box = st.container(height=430)
     with msgs_box:
@@ -699,12 +666,7 @@ def render_chat():
             st.rerun()
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  RENDER: INPUT BAR
-#  FIX 1: trigger ONLY on button click or Enter (form submit), not bare text
-#  FIX 2: use submit_count integer for dedup, not text comparison
-#  FIX 10: rotate input_key after submit so widget clears on next render
-# ══════════════════════════════════════════════════════════════════════════════
+
 def render_input_bar():
     st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
     if st.session_state.vectorstore:
@@ -740,9 +702,9 @@ def render_input_bar():
         st.rerun()
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 #  MAIN  — process before render so answer is visible on same rerun
-# ══════════════════════════════════════════════════════════════════════════════
+
 process_pending()
 render_top_nav()
 render_upload_panel()
