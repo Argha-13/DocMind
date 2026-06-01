@@ -1,55 +1,9 @@
-
+streamlit
 langchain
 langchain-core
 langchain-community
-langchain-text-splitters
-
-
-# Environment variables
-python-dotenv
-
-# LLM Providers
-langchain-google-genai
 langchain-mistralai
-
-# Hugging Face
-transformers
-huggingface_hub
-sentence-transformers
-
-# Embeddings / Torch
-torch
-
-# Vector Database
+langchain-text-splitters
 chromadb
-
-# Document Loaders
 pypdf
-pymupdf
-unstructured
-
-# Tokenization
-tiktoken
-
-# Fast tokenizer backend
-sentencepiece
-
-# API / Backend (if building APIs)
-fastapi
-uvicorn
-
-# Data validation
-pydantic
-
-# Retrieval improvements
-rank-bm25
-
-# Optional reranking
-flagembedding
-
-# Logging / Monitoring
-loguru
-
-# HTTP Requests
-httpx
-requests
+python-dotenv
